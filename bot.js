@@ -13,16 +13,28 @@ let lastGeneratedQR = null;
 let userStates = {};
 
 async function connectToWhatsApp() {
-  // Usar la variable de entorno para la ruta de autenticación
-  const authPath = process.env.BAILEYS_AUTH_PATH || '/mnt/data/baileys_auth';
+  // Intentamos recuperar el estado de autenticación desde Firebase
+  const savedStateSnapshot = await db.ref('authState').once('value');
+  const savedState = savedStateSnapshot.val();
 
-  const { state, saveCreds } = await useMultiFileAuthState(authPath);
+  let state, saveCreds;
+
+  // Si el estado de autenticación ya existe en Firebase, lo usamos
+  if (savedState) {
+    ({ state, saveCreds } = { state: savedState, saveCreds: () => {} });
+  } else {
+    // Si no existe el estado en Firebase, creamos un nuevo estado de autenticación
+    const { state: newState, saveCreds: newSaveCreds } = await useMultiFileAuthState('baileys_auth');
+    state = newState;
+    saveCreds = newSaveCreds;
+  }
+
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: true,
+    printQRInTerminal: false,  // Desactivar QR en la terminal
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -31,7 +43,11 @@ async function connectToWhatsApp() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      lastGeneratedQR = qr;
+      lastGeneratedQR = qr;  // Asignar el QR generado
+      console.log('QR generado, por favor escanéalo');  // Notificar al usuario
+
+      // Aquí puedes agregar la lógica para mostrar el QR generado en tu servidor
+      // por ejemplo, mostrando el QR en una página web
     }
 
     if (connection === 'close') {
@@ -58,6 +74,12 @@ async function connectToWhatsApp() {
     if (response) {
       await sock.sendMessage(from, { text: response });
     }
+  });
+
+  sock.ev.on('creds.update', (cred) => {
+    db.ref('authState').set(cred)  // Guarda las credenciales en Firebase
+      .then(() => console.log('✅ Estado de autenticación guardado en Firebase'))
+      .catch((err) => console.error('❌ Error al guardar en Firebase:', err));
   });
 }
 
@@ -203,7 +225,7 @@ app.listen(port, () => {
 
 connectToWhatsApp();
 
-const keepAliveUrl = 'https://b3bb658c-3da2-4442-a567-e891c2d634a1-00-hjjwslmg8fdu.kirk.replit.dev/'; // 
+const keepAliveUrl = 'https://your-railway-app-url/'; // Cambia esto por la URL de tu aplicación
 
 setInterval(() => {
   axios.get(keepAliveUrl)
