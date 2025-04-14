@@ -1,6 +1,7 @@
 # Node.js
 node_modules/
 firebase-credentials.json
+baileys_auth/
 # Logs
 logs
 *.log
