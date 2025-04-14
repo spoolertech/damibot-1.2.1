@@ -5,6 +5,7 @@ const express = require('express');
 const fs = require('fs');
 const axios = require('axios');
 const db = require('./firebase');
+const path = require('path');  // Importamos el módulo 'path' para manejar rutas de archivos
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,8 +13,12 @@ let lastGeneratedQR = null;
 
 let userStates = {};
 
+// Definimos la ruta para el archivo de autenticación dentro de la carpeta 'data'
+const authDir = path.join(__dirname, 'data', 'baileys_auth');
+
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState('baileys_auth');
+  // Usamos la ruta 'authDir' para guardar el estado de autenticación
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
@@ -156,6 +161,7 @@ Gracias por la info!!! ❤️ Todo listo! Ahora podés comenzar a jugar‼️.
 * Este sistema NO REEMPLAZA a la reserva por PADELINK, si no la hiciste, hacela así nadie te pide la cancha 😡 mientras estés jugando 🏓.
 
 Gracias por elegirnos 😍😍!! Disfruten el partido!!!`;
+
 
   db.ref('reservas').push({
     nombre: data.name,
