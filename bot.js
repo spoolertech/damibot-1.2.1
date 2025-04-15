@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 app.use(express.static('public')); // Servir archivos estáticos desde la carpeta "public"
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 async function connectToWhatsApp() {
   // Se usa la ruta donde se guardarán las credenciales
